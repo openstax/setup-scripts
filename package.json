@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "fetch-vcr": "^1.1.1"
+  }
+}
