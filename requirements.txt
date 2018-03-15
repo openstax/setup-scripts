@@ -1,0 +1,2 @@
+# These are the python requirements that need to be installed
+pytest
