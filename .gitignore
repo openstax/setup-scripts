@@ -1,3 +1,9 @@
-# Python Virtualenv
+# Node libraries
+/node_modules/
 
+# Python Virtualenv
 /venv/
+
+# Ruby libraries
+/vendor/
+/.bundle/

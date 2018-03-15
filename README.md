@@ -21,6 +21,7 @@ These are the files that are used to configure repositories that use https://nod
 - `package.json` : All libraries and any node scripts that are used
 - `yarn.lock` : **(Optional)** Specific versions of libraries listed in `package.json` (installed via [yarn](https://yarnpkg.com))
 
+
 ### Python
 
 These are the files that are used to configure repositories that use https://www.python.org
@@ -28,3 +29,12 @@ These are the files that are used to configure repositories that use https://www
 - `.python-version` : The version of python that should be used (installed via [pyenv](https://github.com/pyenv/pyenv))
 - `requirements.txt` : All libraries that need to be installed
 - `setup.py` : **(Optional)** alternative definition of libraries
+
+
+### Ruby
+
+These are the files that are used to configure repositories that use https://www.ruby-lang.org
+
+- `.ruby-version` : The version of ruby that should be installed (installed via [rbenv](https://github.com/rbenv/rbenv))
+- `Gemfile` : All libraries that need to be installed
+- `Gemfile.lock` : **(Optional)** Specific versions of libraries
