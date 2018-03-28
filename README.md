@@ -9,6 +9,15 @@ The files in the [./script/](./script/) directory are copy/pasted into repositor
 - `./script/setup` Sets up the repository, installing any packages that are needed
 - `LOG_LEVEL=trace ./script/setup` logs every command that is executed when setting up
 
+# macOS Specific
+
+These files are specific to macOS
+
+- `Brewfile` : all Operating System packages that this repository depends on. These usually include:
+    - `brew "nodenv"` : used for installing a specific version of nodeJS
+    - `brew "rbenv"` : used for installing a specific version of Ruby
+    - `brew "python"` : used for installing a specific version of Python
+
 # Languages
 
 This section contains language-specific files that are needed to run code in this repository.
