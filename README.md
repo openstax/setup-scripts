@@ -7,7 +7,15 @@ The files in the [./script/](./script/) directory are copy/pasted into repositor
 # Use
 
 - `./script/setup` Sets up the repository, installing any packages that are needed
-- `LOG_LEVEL=trace ./script/setup` logs every command that is executed when setting up
+    - `LOG_LEVEL=trace ./script/setup` logs every command that is executed when setting up
+- `./script/test` **(optional)** runs the tests in the repository
+- `./script/clean` **(optoinal)** removes any files created as part of `setup` (e.g. installed packages)
+
+
+### Screenshot
+
+![console-screenshot](https://user-images.githubusercontent.com/253202/38060741-fd45bf0e-32b9-11e8-98e4-b92e2a8c6f46.png)
+
 
 # macOS Specific
 
@@ -18,11 +26,13 @@ These files are specific to macOS
     - `brew "rbenv"` : used for installing a specific version of Ruby
     - `brew "python"` : used for installing a specific version of Python
 
+
 # Languages
 
 This section contains language-specific files that are needed to run code in this repository.
 
-### Node
+
+### NodeJS
 
 These are the files that are used to configure repositories that use https://nodejs.org
 
