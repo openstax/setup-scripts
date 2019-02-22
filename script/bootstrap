@@ -96,7 +96,7 @@ if [[ ! ${BOOTSTRAP_ALREADY_RAN} ]]; then
   fi
 
   # Python: Install & Activate python virtualenv
-  if [[ ! "${CI}" = "true" ]] && [[ -f "./setup.py" || -f "./requirements.txt" ]]; then
+  if [[ ! "${TRAVIS}" = "true" ]] && [[ -f "./setup.py" || -f "./requirements.txt" ]]; then
     # Only install & activate the virtualenv if not already in one
     if [[ -z "${VIRTUAL_ENV}" ]]; then
 
@@ -107,18 +107,15 @@ if [[ ! ${BOOTSTRAP_ALREADY_RAN} ]]; then
       python_version="$(< .python-version)"
       virtualenv_command="virtualenv"
 
-      # macOS needs a little extra love
-      if [[ "$(uname -s)" = "Darwin" ]]; then
-        # Install the correct python version if it is not installed yet
-        if [[ ! $(pyenv which python) ]]; then
-          do_progress_quiet "Installing Python ${python_version} (using pyenv)" \
-            pyenv install "${python_version}"
-        fi
-        # Ensure pyenv is initialized
-        eval "$(pyenv init -)"
-
-        virtualenv_command="pyenv exec virtualenv"
+      # Install the correct python version if it is not installed yet
+      if [[ ! $(pyenv which python) ]]; then
+        do_progress_quiet "Installing Python ${python_version} (using pyenv)" \
+          pyenv install "${python_version}"
       fi
+      # Ensure pyenv is initialized
+      eval "$(pyenv init -)"
+
+      virtualenv_command="pyenv exec virtualenv"
 
       # Install pip if it is not available
       if [[ ! $(command -v pip) ]]; then
@@ -158,7 +155,7 @@ if [[ ! ${BOOTSTRAP_ALREADY_RAN} ]]; then
 
   # Javascript environment
   # Set up the correct version of node (Travis automatically does this)
-  if [[ ! "${CI}" = "true" ]]; then
+  if [[ ! "${TRAVIS}" = "true" ]]; then
     # Move from using .nvmrc to .node-version
     if [[ -f "./.nvmrc" ]]; then
       _say "${c_red}DEPRECATED:${c_none} using .nvmrc file but renaming it to be .node-version"
@@ -180,6 +177,7 @@ if [[ ! ${BOOTSTRAP_ALREADY_RAN} ]]; then
           eval "$(nodenv init -)"
           do_progress_quiet "Installing correct version of node" \
             nodenv install "$(< ./.node-version)" --skip-existing
+
         elif [[ -f "${HOME}/.nvm/nvm.sh" ]]; then
           # DEPRECATE the nvm method once deployments do not use it
           # shellcheck disable=SC1090
@@ -189,6 +187,16 @@ if [[ ! ${BOOTSTRAP_ALREADY_RAN} ]]; then
         fi
       fi
 
+      # Add the nodenv version of node into the path so that `#!/usr/bin/env node` works.
+      # This is needed when packages build native code so they are compiled
+      # against the correct version of node (e.g. node-sass)
+      if [[ $(command -v nodenv) ]]; then
+        do_progress "Prepending nodenv node to beginning of PATH so native bindings compile against the right version of node"
+        PATH="$(dirname "$(nodenv which node)" ):${PATH}"
+      elif [[ $(command -v nvm) ]]; then
+        nvm use "$(< ./.node-version)"
+      fi
+
       version_actual="$(node --version 2> /dev/null)"
       if [[ "${version_actual}" != "${version_required}" ]]; then
         die "Could not install the correct version of node. Expected '${version_required}' but found '${version_actual}'. Try installing nodenv or nvm. If you installed nodenv then open a new shell"
@@ -196,15 +204,16 @@ if [[ ! ${BOOTSTRAP_ALREADY_RAN} ]]; then
     fi
   fi
 
-  # ensure yarn or npm is installed (for installing JS packages)
+  # ensure yarn is installed (for installing JS packages)
   if [[ -f "./package.json" ]]; then
-    [[ $(command -v yarn) ]] || \
-      [[ $(command -v npm) ]] || \
-        die "yarn or npm must be installed"
+    if [[ ! $(command -v yarn) ]]; then
+      do_progress "Installing yarn but you can also go to https://yarnpkg.com or adding it to Brewfile (macos)" \
+        npm install --global yarn
+    fi
   fi
 
   # Note: Skip rbenv for Travis because it already has ruby
-  if [[ ! "${CI}" = "true" ]] && [[ -f ".ruby-version" ]]; then
+  if [[ ! "${TRAVIS}" = "true" ]] && [[ -f ".ruby-version" ]]; then
     if [[ -n $(command -v rbenv) ]]; then
       if [[ -z "$(rbenv version-name 2>/dev/null)" ]]; then
         do_progress_quiet "Installing Ruby (see ./.ruby-version)" \
