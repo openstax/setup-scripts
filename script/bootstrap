@@ -105,10 +105,9 @@ if [[ ! ${BOOTSTRAP_ALREADY_RAN} ]]; then
 
       virtualenv_dir="./venv/"
       python_version="$(< .python-version)"
-      virtualenv_command="virtualenv"
 
-      # macOS needs a little extra love
-      if [[ "$(uname -s)" = "Darwin" ]]; then
+      # Use pyenv if it is installed
+      if [[ -n "$(which pyenv)" ]]; then
         # Install the correct python version if it is not installed yet
         if [[ ! $(pyenv which python) ]]; then
           do_progress_quiet "Installing Python ${python_version} (using pyenv)" \
@@ -116,8 +115,7 @@ if [[ ! ${BOOTSTRAP_ALREADY_RAN} ]]; then
         fi
         # Ensure pyenv is initialized
         eval "$(pyenv init -)"
-
-        virtualenv_command="pyenv exec virtualenv"
+        pyenv global "${python_version}"
       fi
 
       # Install pip if it is not available
@@ -134,9 +132,9 @@ if [[ ! ${BOOTSTRAP_ALREADY_RAN} ]]; then
       fi
 
       # Install virtualenv
-      # If macOS then check that the pyenv virtualenv is installed.
-      # If not running macOS then check that some virtualenv is installed.
-      if [[ "$(uname -s)" != "Darwin" && ! $(command -v virtualenv) ]] || [[ "$(uname -s)" = "Darwin" && ! $(pyenv which virtualenv) ]]; then
+      # If pyenv is installed then check that the pyenv virtualenv is installed.
+      # If not then check that some virtualenv is installed.
+      if [[ -z "$(which pyenv)" && ! $(command -v virtualenv) ]] || [[ -n "$(which pyenv)" && ! $(pyenv which virtualenv) ]]; then
         do_progress_quiet "Installing Python virtualenv" \
           pip install virtualenv
         # Rehash so that virtualenv is available
@@ -146,7 +144,7 @@ if [[ ! ${BOOTSTRAP_ALREADY_RAN} ]]; then
       if [[ ! -d "${virtualenv_dir}" ]]; then
         # shellcheck disable=SC2086
         do_progress_quiet "Setting up a Python virtualenv" \
-          ${virtualenv_command} "${virtualenv_dir}"
+          virtualenv -p "$(which python)" "${virtualenv_dir}"
       fi
 
       do_progress_quiet "Activating Python virtualenv" \
@@ -180,6 +178,7 @@ if [[ ! ${BOOTSTRAP_ALREADY_RAN} ]]; then
           eval "$(nodenv init -)"
           do_progress_quiet "Installing correct version of node" \
             nodenv install "$(< ./.node-version)" --skip-existing
+
         elif [[ -f "${HOME}/.nvm/nvm.sh" ]]; then
           # DEPRECATE the nvm method once deployments do not use it
           # shellcheck disable=SC1090
@@ -189,6 +188,16 @@ if [[ ! ${BOOTSTRAP_ALREADY_RAN} ]]; then
         fi
       fi
 
+      # Add the nodenv version of node into the path so that `#!/usr/bin/env node` works.
+      # This is needed when packages build native code so they are compiled
+      # against the correct version of node (e.g. node-sass)
+      if [[ $(command -v nodenv) ]]; then
+        do_progress "Prepending nodenv node to beginning of PATH so native bindings compile against the right version of node"
+        PATH="$(dirname "$(nodenv which node)" ):${PATH}"
+      elif [[ $(command -v nvm) ]]; then
+        nvm use "$(< ./.node-version)"
+      fi
+
       version_actual="$(node --version 2> /dev/null)"
       if [[ "${version_actual}" != "${version_required}" ]]; then
         die "Could not install the correct version of node. Expected '${version_required}' but found '${version_actual}'. Try installing nodenv or nvm. If you installed nodenv then open a new shell"
@@ -196,11 +205,9 @@ if [[ ! ${BOOTSTRAP_ALREADY_RAN} ]]; then
     fi
   fi
 
-  # ensure yarn or npm is installed (for installing JS packages)
+  # ensure yarn is installed (for installing JS packages)
   if [[ -f "./package.json" ]]; then
-    [[ $(command -v yarn) ]] || \
-      [[ $(command -v npm) ]] || \
-        die "yarn or npm must be installed"
+    [[ $(command -v yarn) ]] || die "Install yarn by going to https://yarnpkg.com or adding it to Brewfile (macos)"
   fi
 
   # Note: Skip rbenv for Travis because it already has ruby
